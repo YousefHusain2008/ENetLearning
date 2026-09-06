@@ -1,13 +1,15 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <iostream>
+#include <thread>
+#include <atomic>
 #define ENET_IMPLEMENTATION
 #include "enet.h"
 
 #define newline "\n"
 
 #ifdef _DEBUG // defing logging macros in debug mode.
-#define log(msg) cout << msg << newline;
-#define logv(var) cout << #var << " is: " << var << newline;
+#define log(msg) cout << msg << newline
+#define logv(var) cout << #var << " is: " << var << newline
 #else // deleting logging macros in release mode.
 #define log(msg)
 #define logv(var)
@@ -15,14 +17,18 @@
 
 using std::cout;
 using std::cin;
+using std::atomic;
+using std::thread;
 
 #define MAX_CLIENTS 30
 
-int main()
-{
+
+atomic<bool> enterKeyPressed(false);
+
+void ENetThreadFunction() {
     if (enet_initialize() != 0) {
         cout << "ENet failed to initialize!\n";
-        return EXIT_FAILURE;
+        return;
     }
 
     cout << "ENet initialized successfully!\n";
@@ -36,7 +42,7 @@ int main()
     if (server == nullptr) {
         cout << "ENet failed to create a server! Firewall is blocking the socket.\n";
         enet_deinitialize();
-        return EXIT_FAILURE;
+        return;
     }
 
     cout << "Survival game server is up and running successfully on port 7777! 🎉\n";
@@ -78,14 +84,24 @@ int main()
                 break;
             }
         }
-        log("Waiting for event...");
-        counter++;
-        if (counter == 5) break;
+        //log("waiting for events.....");
+        if (enterKeyPressed) break;
     }
 
     enet_host_destroy(server);
     enet_deinitialize();
 
     cout << "Server shutdown clearly & safely!\n";
+}
+
+int main()
+{
+    thread eNetThread(ENetThreadFunction);
+
+    cin.get();
+    enterKeyPressed = true;
+
+    eNetThread.join();
+    log("Thread Finished Executing!");
     return 0;
 }
