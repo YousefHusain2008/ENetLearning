@@ -3,12 +3,12 @@
 #define ENET_IMPLEMENTATION
 #include "enet.h"
 
-#ifdef _DEBUG // defing logging macros in debug mode.
 #define newline "\n"
+
+#ifdef _DEBUG // defing logging macros in debug mode.
 #define log(msg) cout << msg << newline;
 #define logv(var) cout << #var << " is: " << var << newline;
 #else // deleting logging macros in release mode.
-#define newline
 #define log(msg)
 #define logv(var)
 #endif
@@ -20,31 +20,72 @@ using std::cin;
 
 int main()
 {
-	if (enet_initialize() != 0) {
-		log("ENet failed to initialize!");
-		return EXIT_FAILURE;
-	}
+    if (enet_initialize() != 0) {
+        cout << "ENet failed to initialize!\n";
+        return EXIT_FAILURE;
+    }
 
-	log("ENet initialized successfully!");
+    cout << "ENet initialized successfully!\n";
 
-	ENetAddress address;
-	address.host = ENET_HOST_ANY;
-	address.port = 7777;
+    ENetAddress address = { 0 };
+    address.host = ENET_HOST_ANY;
+    address.port = 7777;
 
-	ENetHost* server = enet_host_create(&address, MAX_CLIENTS, 5, 0, 0);
+    ENetHost* server = enet_host_create(&address, MAX_CLIENTS, 5, 0, 0);
 
-	if (server == nullptr) {
-		log("ENet failed to create a server, pls make sure your firewall doesnt block the conneciton or your computer connection drives arent broken!");
-		log("Restart your internet if your internet connection got blocked!");
-		return EXIT_FAILURE;
-	}
+    if (server == nullptr) {
+        cout << "ENet failed to create a server! Firewall is blocking the socket.\n";
+        enet_deinitialize();
+        return EXIT_FAILURE;
+    }
 
-	log("ENet created the server successfully!");
-	log("Survival game is up and running on port 7777");
+    cout << "Survival game server is up and running successfully on port 7777! 🎉\n";
 
-	enet_host_destroy(server);
-	enet_deinitialize();
+    // Keep the server alive waiting for input
+    ENetEvent event;
+    int counter = 0;
+    while (true) {
+        while (enet_host_service(server, &event, 10) > 0) {
+            log("we caught a network event!");
 
-	log("Server shutdown clearly & safely!");
-	std::cin.get();
+            switch (event.type) {
+            case ENET_EVENT_TYPE_CONNECT: {
+                log("new player connected to he server!");
+                char ipBuffer[64];
+                enet_address_get_host_ip(&event.peer->address, ipBuffer, sizeof(ipBuffer));
+                logv(event.peer->address.port);
+                break;
+            }
+
+            case ENET_EVENT_TYPE_RECEIVE: {
+                char ipBuffer[64];
+                enet_address_get_host_ip(&event.peer->address, ipBuffer, sizeof(ipBuffer));
+                logv(event.peer->address.port);
+                enet_packet_destroy(event.packet);
+                break;
+            }
+
+            case ENET_EVENT_TYPE_DISCONNECT: {
+                log("player disconnected from the game!");
+                char ipBuffer[64];
+                enet_address_get_host_ip(&event.peer->address, ipBuffer, sizeof(ipBuffer));
+                logv(event.peer->address.port);
+                event.peer->data = (void*)nullptr;
+                break;
+            }
+
+            case ENET_EVENT_TYPE_NONE:
+                break;
+            }
+        }
+        log("Waiting for event...");
+        counter++;
+        if (counter == 5) break;
+    }
+
+    enet_host_destroy(server);
+    enet_deinitialize();
+
+    cout << "Server shutdown clearly & safely!\n";
+    return 0;
 }
