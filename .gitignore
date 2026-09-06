@@ -1,0 +1,29 @@
+# Visual Studio Cache & Database File
+.vs/
+*.slnx.sqlite
+
+# Compiled Object and Intermediate Folders
+obj/
+[Bb]in/
+*.obj
+*.o
+
+# Compiled Executable and Debugging files
+*.exe
+*.pdb
+*.ilk
+*.tlog
+
+# Build output folders
+x64/
+x86/
+[Dd]ebug/
+[Rr]elease/
+
+# User-specific Visual Studio settings
+*.vcxproj.user
+*.suo
+*.user
+
+# others:
+tree.txt
